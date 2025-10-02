@@ -1,0 +1,41 @@
+package com.app;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/auth")
+public class AuthController {
+
+    private final AuthService authService;
+
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody AuthRequest request) {
+        try {
+            String result = authService.register(request.getEmail(), request.getPassword());
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
+        try {
+            String token = authService.login(request.getEmail(), request.getPassword());
+            return ResponseEntity.ok(token);
+        } catch (Exception e) {
+            // Return 401 Unauthorized for login failures
+            return ResponseEntity.status(401).body(e.getMessage());
+        }
+    }
+
+    @GetMapping
+    public String hello() {
+        return "hello";
+    }
+}

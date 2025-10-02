@@ -1,0 +1,41 @@
+package com.app;
+
+import org.springframework.stereotype.Service;
+import java.util.List;
+@Service
+public class FriendService {
+
+    private final FriendRepo friendRepo;
+    private final UserRepo userRepo;
+
+    public FriendService(FriendRepo friendRepo, UserRepo userRepo) {
+        this.friendRepo = friendRepo;
+        this.userRepo = userRepo;
+    }
+
+    public List<User> getFriendsOfUser(Long userId) {
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        List<Friend> friendsList = friendRepo.findByUser(user);
+        return friendsList.stream()
+                          .map(Friend::getFriend)
+                          .toList();
+    }
+
+    public Friend addFriend(Long userId, Long friendId) {
+        User user = userRepo.findById(userId).orElseThrow();
+        User friend = userRepo.findById(friendId).orElseThrow();
+        Friend f = new Friend();
+        f.setUser(user);
+        f.setFriend(friend);
+        return friendRepo.save(f);
+    }
+
+    public void removeFriend(Long userId, Long friendId) {
+        User user = userRepo.findById(userId).orElseThrow();
+        friendRepo.findByUser(user)
+                  .stream()
+                  .filter(f -> f.getFriend().getUserId().equals(friendId))
+                  .forEach(friendRepo::delete);
+    }
+}

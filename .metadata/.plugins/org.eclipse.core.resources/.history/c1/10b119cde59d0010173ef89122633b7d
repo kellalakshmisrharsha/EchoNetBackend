@@ -1,0 +1,50 @@
+package com.app;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.util.Optional;
+
+@Service
+public class AuthService {
+
+    private final UserRepository userRepository;
+    private final Jwtutil jwtUtil;
+    private final BCryptPasswordEncoder passwordEncoder;
+
+    public AuthService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+        this.jwtUtil = new Jwtutil();
+        this.passwordEncoder = new BCryptPasswordEncoder();
+    }
+
+    public String register(String email, String password) throws Exception {
+        if (userRepository.findByEmail(email).isPresent()) {
+            throw new Exception("Email already registered");
+        }
+        try {
+            String encodedPassword = passwordEncoder.encode(password);
+            User user = new User(email, encodedPassword, "USER");
+            userRepository.save(user);
+            return "User registered successfully!";
+        } catch (Exception e) {
+            throw new Exception("Error registering user: " + e.getMessage(), e);
+        }
+    }
+
+
+
+    public String login(String email, String password) throws Exception {
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isEmpty()) {
+            throw new Exception("User not found with email: " + email);
+        }
+
+        User user = userOptional.get();
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new Exception("Invalid password for email: " + email);
+        }
+
+        return jwtUtil.generateToken(user.getEmail());
+    }
+
+}

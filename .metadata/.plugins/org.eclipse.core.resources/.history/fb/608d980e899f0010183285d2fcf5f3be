@@ -1,0 +1,55 @@
+package com.app;
+
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
+import org.springframework.web.server.WebFilterChain;
+import reactor.core.publisher.Mono;
+
+@Component
+public class JwtAuthFilter implements WebFilter {
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
+        
+        System.out.println("JwtAuthFilter: Processing request to " + exchange.getRequest().getPath());
+        System.out.println("JwtAuthFilter: Auth header present: " + (authHeader != null));
+
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+            System.out.println("JwtAuthFilter: Token extracted: " + token.substring(0, Math.min(token.length(), 20)) + "...");
+            
+            try {
+                if (JwtUtil.validateToken(token)) {
+                    // Try to extract userId first
+                    String userId = JwtUtil.extractUserId(token);
+                    if (userId != null && !userId.trim().isEmpty()) {
+                        exchange.getAttributes().put("userId", userId);
+                        System.out.println("JwtAuthFilter: UserId saved to exchange attributes: " + userId);
+                    }
+                    
+                    // Also try to extract username for backward compatibility
+                    String username = JwtUtil.extractUsername(token);
+                    if (username != null && !username.trim().isEmpty()) {
+                        exchange.getAttributes().put("username", username);
+                        System.out.println("JwtAuthFilter: Username saved to exchange attributes: " + username);
+                    }
+                    
+                    if (userId == null && username == null) {
+                        System.out.println("JwtAuthFilter: No userId or username found in token!");
+                    }
+                } else {
+                    System.out.println("JwtAuthFilter: Token validation failed");
+                }
+            } catch (Exception e) {
+                System.out.println("JwtAuthFilter: Error processing token: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("JwtAuthFilter: No valid Authorization header found");
+        }
+
+        return chain.filter(exchange);
+    }
+}

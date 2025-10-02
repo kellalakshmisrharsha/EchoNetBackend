@@ -1,0 +1,35 @@
+package com.app;
+
+import org.springframework.web.bind.annotation.*;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
+@RestController
+@RequestMapping("/users")
+public class UserController {
+
+    private final FriendService friendService;
+
+    public UserController(FriendService friendService) {
+        this.friendService = friendService;
+    }
+
+    @GetMapping("/friends")
+    public List<User> getFriends(HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return friendService.getFriendsOfUser(userId);
+    }
+
+    @PostMapping("/friends/{friendId}")
+    public Friend addFriend(HttpServletRequest request, @PathVariable Long friendId) {
+        Long userId = (Long) request.getAttribute("userId");
+        return friendService.addFriend(userId, friendId);
+    }
+
+    @DeleteMapping("/friends/{friendId}")
+    public void removeFriend(HttpServletRequest request, @PathVariable Long friendId) {
+        Long userId = (Long) request.getAttribute("userId");
+        friendService.removeFriend(userId, friendId);
+    }
+}

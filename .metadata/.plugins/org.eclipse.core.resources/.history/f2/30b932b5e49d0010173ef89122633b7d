@@ -1,0 +1,19 @@
+# 1. SERVICE IDENTITY
+spring.application.name=user-service
+server.port=8080
+jwt.secret=mYs3cR3tK3yForJWTs1234567890abcdef
+
+# 2. EUREKA DISCOVERY CLIENT
+eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka
+eureka.client.fetch-registry=true
+eureka.client.register-with-eureka=true
+
+# 3. MYSQL / JPA CONFIGURATION
+spring.datasource.url=jdbc:mysql://localhost:3306/echonet
+spring.datasource.username=root
+spring.datasource.password=abc123
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.jpa.show-sql=true
+spring.jpa.hibernate.ddl-auto=create
+
+spring.main.web-application-type=reactive

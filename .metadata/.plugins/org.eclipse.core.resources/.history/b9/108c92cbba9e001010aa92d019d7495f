@@ -1,0 +1,54 @@
+package com.app;
+
+import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+@RestController
+@RequestMapping("/posts")
+public class PostController {
+
+    private final PostService postService;
+
+    public PostController(PostService postService) {
+        this.postService = postService;
+    }
+
+    // Posts
+    @PostMapping
+    public Mono<Post> createPost(@RequestBody Post post) {
+        return postService.createPost(post);
+    }
+
+    @GetMapping
+    public Flux<Post> getAllPosts() {
+        return postService.getAllPosts();
+    }
+
+    @GetMapping("/user/{userId}")
+    public Flux<Post> getPostsByUser(@PathVariable Long userId) {
+        return postService.getPostsByUser(userId);
+    }
+
+    // Likes
+    @PostMapping("/like")
+    public Mono<Like> likePost(@RequestBody Like like) {
+        return postService.addLike(like);
+    }
+
+    @GetMapping("/{postId}/likes")
+    public Flux<Like> getLikes(@PathVariable Long postId) {
+        return postService.getLikes(postId);
+    }
+
+    // Comments
+    @PostMapping("/comment")
+    public Mono<Comment> addComment(@RequestBody Comment comment) {
+        return postService.addComment(comment);
+    }
+
+    @GetMapping("/{postId}/comments")
+    public Flux<Comment> getComments(@PathVariable Long postId) {
+        return postService.getComments(postId);
+    }
+}

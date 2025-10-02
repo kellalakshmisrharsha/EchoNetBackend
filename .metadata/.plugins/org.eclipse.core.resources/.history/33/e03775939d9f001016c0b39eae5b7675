@@ -1,0 +1,66 @@
+package com.app;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+@RestController
+@RequestMapping("/test")
+public class TestController {
+
+    @GetMapping("/auth")
+    public Mono<String> testAuth(ServerWebExchange exchange) {
+        String username = (String) exchange.getAttribute("username");
+        String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
+        
+        System.out.println("TestController: Auth header: " + authHeader);
+        System.out.println("TestController: Username from exchange: " + username);
+        System.out.println("TestController: All exchange attributes: " + exchange.getAttributes());
+        
+        if (username != null) {
+            return Mono.just("Authentication successful! Username: " + username);
+        } else {
+            String debug = "Authentication failed - no username found. ";
+            debug += "Auth header present: " + (authHeader != null);
+            if (authHeader != null) {
+                debug += ", Header starts with Bearer: " + authHeader.startsWith("Bearer ");
+            }
+            return Mono.just(debug);
+        }
+    }
+    
+    @GetMapping("/public")
+    public Mono<String> testPublic() {
+        return Mono.just("Public endpoint - no authentication required");
+    }
+    
+    @GetMapping("/generate-token")
+    public Mono<String> generateToken(@RequestParam(defaultValue = "testuser") String username) {
+        String token = JwtUtil.generateToken(username);
+        if (token != null) {
+            return Mono.just("Generated token for user '" + username + "': " + token);
+        } else {
+            return Mono.just("Failed to generate token");
+        }
+    }
+    
+    @GetMapping("/generate-token-userid")
+    public Mono<String> generateTokenWithUserId(@RequestParam(defaultValue = "1") Long userId) {
+        String token = JwtUtil.generateTokenWithUserId(userId);
+        if (token != null) {
+            return Mono.just("Generated token for userId '" + userId + "': " + token);
+        } else {
+            return Mono.just("Failed to generate token");
+        }
+    }
+    
+    @GetMapping("/check-user")
+    public Mono<String> checkUser(@RequestParam(defaultValue = "testuser") String username, UserRepository userRepo) {
+        return userRepo.findByUsername(username)
+                .map(user -> "User found: ID=" + user.getId() + ", Username=" + user.getUsername())
+                .switchIfEmpty(Mono.just("User not found: " + username));
+    }
+}

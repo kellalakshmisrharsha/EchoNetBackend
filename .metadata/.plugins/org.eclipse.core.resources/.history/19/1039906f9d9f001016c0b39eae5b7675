@@ -1,0 +1,48 @@
+
+# ---------------------------
+# Server
+# ------------------
+# ---------------------------
+# Spring R2DBC MySQL Configuration
+# ---------------------------
+spring.r2dbc.url=r2dbc:mysql://localhost:3306/echonet
+spring.r2dbc.username=root
+spring.r2dbc.password=abc123
+# Only create missing tables, do not drop existing ones
+spring.r2dbc.schema-generation=CREATE
+
+server.port=8082
+# Optional: R2DBC connection pool settings
+spring.r2dbc.pool.initial-size=5
+# Disable Spring Cloud Config (so your app can start)
+spring.cloud.config.enabled=false
+spring.r2dbc.pool.max-size=20
+
+# ---------------------------
+# Spring Cloud Config
+# ---------------------------
+spring.cloud.config.uri=http://localhost:8888
+spring.cloud.config.name=postservice
+spring.cloud.config.profile=dev
+spring.cloud.config.label=main
+
+# ---------------------------
+# Eureka Client Configuration
+# ---------------------------
+eureka.client.service-url.defaultZone=http://localhost:8761/eureka/
+eureka.client.register-with-eureka=true
+eureka.client.fetch-registry=true
+eureka.instance.prefer-ip-address=true
+spring.application.name=postservice
+
+# ---------------------------
+# JWT Secret (for Auth)
+# ---------------------------
+jwt.secret=mYs3cR3tK3yForJWTs1234567890abcdef
+jwt.expiration-ms=3600000
+
+# ---------------------------
+# Logging
+# ---------------------------
+logging.level.org.springframework=INFO
+logging.level.com.app=DEBUG

@@ -1,0 +1,130 @@
+﻿package com.app;
+
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.time.LocalDateTime;
+
+@RestController
+@RequestMapping("/posts")
+public class PostController {
+
+    private final PostService postService;
+    private final UserRepository userRepo;
+
+    public PostController(PostService postService, UserRepository userRepo) {
+        this.postService = postService;
+        this.userRepo = userRepo;
+    }
+
+    private Mono<Long> getUserId(ServerWebExchange exchange) {
+        String userIdStr = (String) exchange.getAttribute("userId");
+        if (userIdStr != null) {
+            try {
+                Long userId = Long.parseLong(userIdStr);
+                System.out.println("PostController: Retrieved userId from exchange: " + userId);
+                return Mono.just(userId);
+            } catch (NumberFormatException e) {
+                System.out.println("PostController: Invalid userId format: " + userIdStr);
+            }
+        }
+
+        String username = (String) exchange.getAttribute("username");
+        System.out.println("PostController: Retrieved username from exchange: " + username);
+
+        if (username == null) {
+            System.out.println("PostController: No userId or username found - authentication failed!");
+            return Mono.error(new RuntimeException("Authentication required - user info not found"));
+        }
+
+        if (username.matches("\\d+")) {
+            try {
+                Long userId = Long.parseLong(username);
+                System.out.println("PostController: Treating numeric username as userId: " + userId);
+                return Mono.just(userId);
+            } catch (NumberFormatException e) {
+                System.out.println("PostController: Failed to parse numeric username: " + username);
+            }
+        }
+
+        System.out.println("PostController: Looking up user by username: " + username);
+        return userRepo.findByUsername(username)
+                .doOnNext(user -> System.out.println("PostController: Found user: " + user.getId()))
+                .doOnError(error -> System.out.println("PostController: Database error: " + error.getMessage()))
+                .map(User::getId)
+                .switchIfEmpty(Mono.error(new RuntimeException("User not found: " + username)));
+    }
+
+    @PostMapping
+    public Mono<Post> createPost(ServerWebExchange exchange, @RequestBody Post post) {
+        return getUserId(exchange).flatMap(userId -> {
+            post.setUserId(userId);
+            post.setCreatedAt(LocalDateTime.now());
+            post.setIsActive(true);
+            return postService.createPost(post);
+        });
+    }
+
+    @GetMapping
+    public Flux<Post> getAllPosts() {
+        return postService.getAllPosts();
+    }
+
+    @GetMapping("/user/{userId}")
+    public Flux<Post> getPostsByUser(@PathVariable Long userId) {
+        return postService.getPostsByUser(userId);
+    }
+
+    @PostMapping("/{postId}/like")
+    public Mono<Like> likePost(ServerWebExchange exchange, @PathVariable Long postId) {
+        return getUserId(exchange).flatMap(userId -> {
+            Like like = new Like();
+            like.setPostId(postId);
+            like.setUserId(userId);
+            like.setCreatedAt(LocalDateTime.now());
+            return postService.addLike(like);
+        });
+    }
+
+    @DeleteMapping("/{postId}/like")
+    public Mono<Void> unlikePost(ServerWebExchange exchange, @PathVariable Long postId) {
+        return getUserId(exchange).flatMap(userId ->
+                postService.removeLike(postId, userId)
+        );
+    }
+
+    @GetMapping("/{postId}/likes")
+    public Flux<Like> getLikes(@PathVariable Long postId) {
+        return postService.getLikes(postId);
+    }
+
+    @GetMapping("/{postId}/like-status")
+    public Mono<Boolean> getLikeStatus(ServerWebExchange exchange, @PathVariable Long postId) {
+        return getUserId(exchange).flatMap(userId ->
+                postService.isLikedByUser(postId, userId)
+        );
+    }
+
+    @PostMapping("/comment")
+    public Mono<Comment> addComment(ServerWebExchange exchange, @RequestBody Comment comment) {
+        return getUserId(exchange).flatMap(userId -> {
+            comment.setUserId(userId);
+            comment.setCreatedAt(LocalDateTime.now());
+            return postService.addComment(comment);
+        });
+    }
+
+    @GetMapping("/{postId}/comments")
+    public Flux<Comment> getComments(@PathVariable Long postId) {
+        return postService.getComments(postId);
+    }
+
+    @DeleteMapping("/{postId}")
+    public Mono<Void> deletePost(ServerWebExchange exchange, @PathVariable Long postId) {
+        return getUserId(exchange).flatMap(userId ->
+                postService.deletePost(postId, userId)
+        );
+    }
+}

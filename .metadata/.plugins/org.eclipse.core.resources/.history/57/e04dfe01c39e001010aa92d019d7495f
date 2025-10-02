@@ -1,0 +1,111 @@
+package com.app;
+
+import org.springframework.web.bind.annotation.*;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.springframework.http.codec.multipart.FilePart;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
+import java.time.LocalDateTime;
+
+@RestController
+@RequestMapping("/posts")
+public class PostController {
+
+    private final PostService postService;
+
+    public PostController(PostService postService) {
+        this.postService = postService;
+    }
+
+    // ---------------------------
+    // Create Post (Text Only)
+    // ---------------------------
+    @PostMapping
+    public Mono<Post> createPost(@RequestBody Post post) {
+        post.setCreatedAt(LocalDateTime.now());
+        return postService.createPost(post);
+    }
+
+    // ---------------------------
+    // Create Post with Media
+    // ---------------------------
+    @PostMapping("/upload")
+    public Mono<Post> createPostWithMedia(
+            @RequestPart("post") String postJson,
+            @RequestPart("file") Mono<FilePart> filePartMono) {
+
+        Post post;
+        try {
+            post = new ObjectMapper().readValue(postJson, Post.class);
+        } catch (Exception e) {
+            return Mono.error(new RuntimeException("Invalid post JSON", e));
+        }
+
+        return filePartMono.flatMap(filePart -> 
+            filePart.content()
+                .map(dataBuffer -> {
+                    byte[] bytes = new byte[dataBuffer.readableByteCount()];
+                    dataBuffer.read(bytes);
+                    return bytes;
+                })
+                .reduce((b1, b2) -> {
+                    byte[] combined = new byte[b1.length + b2.length];
+                    System.arraycopy(b1, 0, combined, 0, b1.length);
+                    System.arraycopy(b2, 0, combined, b1.length, b2.length);
+                    return combined;
+                })
+                .flatMap(bytes -> {
+                    post.setMedia(bytes);
+                    post.setMediaName(filePart.filename());
+                    post.setMediaType(filePart.filename().endsWith(".mp4") ? "video" : "image");
+                    post.setCreatedAt(LocalDateTime.now());
+                    return postService.createPost(post);
+                })
+        );
+    }
+
+
+    // ---------------------------
+    // Retrieve Posts
+    // ---------------------------
+    @GetMapping({"", "/"})
+    public Flux<Post> getAllPosts() {
+        return postService.getAllPosts();
+    }
+
+    @GetMapping("/user/{userId}")
+    public Flux<Post> getPostsByUser(@PathVariable Long userId) {
+        return postService.getPostsByUser(userId);
+    }
+
+    // ---------------------------
+    // Likes
+    // ---------------------------
+    @PostMapping("/like")
+    public Mono<Like> likePost(@RequestBody Like like) {
+        like.setCreatedAt(LocalDateTime.now());
+        return postService.addLike(like);
+    }
+
+    @GetMapping("/{postId}/likes")
+    public Flux<Like> getLikes(@PathVariable Long postId) {
+        return postService.getLikes(postId);
+    }
+
+    // ---------------------------
+    // Comments
+    // ---------------------------
+    @PostMapping("/comment")
+    public Mono<Comment> addComment(@RequestBody Comment comment) {
+        comment.setCreatedAt(LocalDateTime.now());
+        return postService.addComment(comment);
+    }
+
+    @GetMapping("/{postId}/comments")
+    public Flux<Comment> getComments(@PathVariable Long postId) {
+        return postService.getComments(postId);
+    }
+}

@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  eurekaserver:
+    image: klsharsha/echonetserver:latest
+    container_name: eurekaserver
+    ports:
+      - "8761:8761"
+
+  apigateway:
+    image: klsharsha/echonetgateway:latest
+    container_name: apigateway
+    ports:
+      - "8088:8080"
+    depends_on:
+      - eurekaserver
+
+  postservice:
+    image: klsharsha/echonetpostservice:latest
+    container_name: postservice
+    ports:
+      - "8081:8080"
+    depends_on:
+      - eurekaserver
+
+  userservice:
+    image: klsharsha/echonetuserservice:latest
+    container_name: userservice
+    ports:
+      - "8082:8080"
+    depends_on:
+      - eurekaserver
+
+  authservice:
+    image: klsharsha/echonetauthservice:latest
+    container_name: authservice
+    ports:
+      - "8083:8080"
+    depends_on:
+      - eurekaserver

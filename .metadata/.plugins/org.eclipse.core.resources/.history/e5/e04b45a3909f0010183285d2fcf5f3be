@@ -1,0 +1,14 @@
+package com.app;
+
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class SecurityConfig {
+
+    // Simple configuration - the JwtAuthFilter is already registered as @Component
+    // This will be automatically picked up by Spring Boot
+    
+    public SecurityConfig() {
+        System.out.println("SecurityConfig: Initializing security configuration");
+    }
+}

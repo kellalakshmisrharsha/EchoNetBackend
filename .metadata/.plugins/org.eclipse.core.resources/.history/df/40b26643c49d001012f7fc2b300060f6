@@ -1,0 +1,18 @@
+package com.app;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class FriendService {
+	@Autowired
+	private FriendRepo fr;
+	
+	public List<User> getFriendsOfUser(User user){
+		List<Friend> fl=fr.findByUser(user);
+		return fl.stream().map(a->a.getFriend()).toList();
+		
+	}
+}

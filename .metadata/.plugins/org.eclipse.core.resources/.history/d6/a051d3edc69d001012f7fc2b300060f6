@@ -1,0 +1,33 @@
+import org.springframework.stereotype.Service;
+import java.util.List;
+
+@Service
+public class FriendService {
+
+    private final FriendRepo friendRepo;
+
+    public FriendService(FriendRepo friendRepo) {
+        this.friendRepo = friendRepo;
+    }
+
+    public List<User> getFriendsOfUser(User user) {
+        List<Friend> friendsList = friendRepo.findByUser(user);
+        return friendsList.stream()
+                          .map(Friend::getFriend)
+                          .toList();
+    }
+
+    public Friend addFriend(User user, User friend) {
+        Friend f = new Friend();
+        f.setUser(user);
+        f.setFriend(friend);
+        return friendRepo.save(f);
+    }
+
+    public void removeFriend(User user, User friend) {
+        friendRepo.findByUser(user)
+                  .stream()
+                  .filter(f -> f.getFriend().getUserId().equals(friend.getUserId()))
+                  .forEach(friendRepo::delete);
+    }
+}

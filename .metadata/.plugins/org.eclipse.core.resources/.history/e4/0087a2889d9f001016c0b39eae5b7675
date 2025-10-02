@@ -1,0 +1,120 @@
+package com.app;
+
+import io.jsonwebtoken.*;
+import io.jsonwebtoken.security.Keys;
+
+import java.security.Key;
+import java.util.Date;
+
+public class JwtUtil {
+
+    private static final String SECRET_KEY = "mYs3cR3tK3yForJWTs1234567890abcdef"; // Fixed 40+ char secret
+
+    private static final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+
+    // Generate a test token with username
+    public static String generateToken(String username) {
+        try {
+            String token = Jwts.builder()
+                    .setSubject(username)           // Store username in subject
+                    .claim("username", username)    // Also store as explicit claim
+                    .setIssuedAt(new Date())
+                    .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 hours
+                    .signWith(key, SignatureAlgorithm.HS256)
+                    .compact();
+            
+            System.out.println("JwtUtil: Generated token for username " + username + ": " + token);
+            return token;
+        } catch (Exception e) {
+            System.out.println("JwtUtil: Error generating token: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // Generate a test token with userId
+    public static String generateTokenWithUserId(Long userId) {
+        try {
+            String token = Jwts.builder()
+                    .setSubject(userId.toString()) // Store userId in subject
+                    .claim("userId", userId)       // Also store as explicit claim
+                    .setIssuedAt(new Date())
+                    .setExpiration(new Date(System.currentTimeMillis() + 24 * 60 * 60 * 1000)) // 24 hours
+                    .signWith(key, SignatureAlgorithm.HS256)
+                    .compact();
+            
+            System.out.println("JwtUtil: Generated token for userId " + userId + ": " + token);
+            return token;
+        } catch (Exception e) {
+            System.out.println("JwtUtil: Error generating token: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // Extract userId from JWT
+    public static String extractUserId(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            
+            // Try to get userId from explicit claim first
+            Object userIdClaim = claims.get("userId");
+            if (userIdClaim != null) {
+                String userId = userIdClaim.toString();
+                System.out.println("JwtUtil: Extracted userId from claim: " + userId);
+                return userId;
+            }
+            
+            // Fallback to subject if it's a number (userId)
+            String subject = claims.getSubject();
+            if (subject != null && subject.matches("\\d+")) {
+                System.out.println("JwtUtil: Extracted userId from subject: " + subject);
+                return subject;
+            }
+            
+            System.out.println("JwtUtil: No userId found in token");
+            return null;
+        } catch (Exception e) {
+            System.out.println("JwtUtil: Error extracting userId: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // Extract username (or userId if you store it in subject) from JWT
+    public static String extractUsername(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            
+            String username = claims.getSubject();
+            System.out.println("JwtUtil: Extracted username: " + username);
+            System.out.println("JwtUtil: All claims: " + claims);
+            
+            return username;
+        } catch (Exception e) {
+            System.out.println("JwtUtil: Error extracting username: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    // Validate token
+    public static boolean validateToken(String token) {
+        try {
+            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            System.out.println("JwtUtil: Token validation successful");
+            return true;
+        } catch (JwtException e) {
+            System.out.println("JwtUtil: Token validation failed: " + e.getMessage());
+            return false;
+        }
+    }
+}

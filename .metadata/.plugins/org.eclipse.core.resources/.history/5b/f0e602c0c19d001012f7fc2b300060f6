@@ -1,0 +1,22 @@
+package com.app;
+
+import org.springframework.beans.factory.annotation.*;
+
+import jakarta.persistence.*;
+
+@Entity
+public class User {
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	@Column(name="userId")
+	public Long userId;
+	
+	@Column(name = "name")
+	public String name;
+	
+	@Column(name="email")
+	public String email;
+	
+	
+	
+}

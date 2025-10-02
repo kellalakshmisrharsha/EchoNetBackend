@@ -1,0 +1,38 @@
+package com.app;
+
+import org.springframework.web.bind.annotation.*;
+import java.util.List;
+
+@RestController
+@RequestMapping("/users")
+public class UserController {
+
+    private final FriendService friendService;
+    private final UserRepo userRepo;
+
+    public UserController(FriendService friendService, UserRepo userRepo) {
+        this.friendService = friendService;
+        this.userRepo = userRepo;
+    }
+
+    @GetMapping("/{id}/friends")
+    public List<User> getFriends(@PathVariable Long id) {
+        User user = userRepo.findById(id)
+                            .orElseThrow(() -> new RuntimeException("User not found"));
+        return friendService.getFriendsOfUser(user);
+    }
+
+    @PostMapping("/{id}/friends/{friendId}")
+    public Friend addFriend(@PathVariable Long id, @PathVariable Long friendId) {
+        User user = userRepo.findById(id).orElseThrow();
+        User friend = userRepo.findById(friendId).orElseThrow();
+        return friendService.addFriend(user, friend);
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    public void removeFriend(@PathVariable Long id, @PathVariable Long friendId) {
+        User user = userRepo.findById(id).orElseThrow();
+        User friend = userRepo.findById(friendId).orElseThrow();
+        friendService.removeFriend(user, friend);
+    }
+}

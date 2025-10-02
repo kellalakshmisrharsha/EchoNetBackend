@@ -1,0 +1,9 @@
+package com.app;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface FriendRepo extends JpaRepository<Friend,Long>{
+	public List<Friend> findByUser(User user);
+}
